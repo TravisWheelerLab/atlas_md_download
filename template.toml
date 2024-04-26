@@ -1,0 +1,37 @@
+replicates = { }
+ligands = [ ]
+solvents = [ ]
+forcefield = { }
+contributors = [ ]
+additional_files = [ ]
+
+[initial]
+description = "<<df_organism>>; <<df_protein_name>>"
+date = "<<today>>"
+lead_contributor_orcid = "0009-0000-9558-8561"
+
+[water]
+is_present = false
+water_density_units = "g/m^3"
+
+[[proteins]]
+molecule_id_type = "Uniprot"
+molecule_id = "<<df_UniProt>>"
+
+[software]
+name = "ATLAS"
+
+[[papers]]
+title = "ATLAS: protein flexibility description from atomistic molecular dynamics simulations "
+authors = "Yann Vander Meersche, Gabriel Cretin, Aria Gheeraert, Jean-Christophe Gelly, Tatiana Galochkina"
+journal = "Nucleic Acids Research"
+year = 2_023
+volume = 52
+number = "D1"
+pages = "D384–D392"
+doi = "1093"
+
+[required_files]
+trajectory_file_name = "<<df_PDB_prod>>.xtc"
+structure_file_name = "<<df_PDB_prod>>.tpr"
+topology_file_name = "<<df_PDB>>.top"
