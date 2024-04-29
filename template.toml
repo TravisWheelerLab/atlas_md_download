@@ -8,7 +8,7 @@ additional_files = [ ]
 [initial]
 description = "<<df_organism>>; <<df_protein_name>>"
 date = "<<today>>"
-lead_contributor_orcid = "0009-0000-9558-8561"
+lead_contributor_orcid = ***your_orc_id***
 
 [water]
 is_present = false
