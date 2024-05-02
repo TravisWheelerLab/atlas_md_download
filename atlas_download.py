@@ -1,4 +1,4 @@
-import os, glob, shutil
+import os, glob, shutil, sys
 import requests
 import pandas as pd
 from zipfile import ZipFile
@@ -54,7 +54,7 @@ def load_template():
         template_content = f.read()
     return template_content
 
-def replace_placeholders(template, row, prod_id):
+def replace_placeholders(template, row, prod_id, orcid):
     # Determine the production identifier suffix
     if prod_id == 1:
         prod_suffix = "_prod_R1"
@@ -72,6 +72,7 @@ def replace_placeholders(template, row, prod_id):
     replaced_template = replaced_template.replace("<<df_PDB>>", row["PDB"])
     replaced_template = replaced_template.replace("<<df_PDB_prod>>", row["PDB"] + prod_suffix)
     replaced_template = replaced_template.replace("<<today>>", str(date.today()))
+    replaced_template = replaced_template.replace("<<df_orcid>>", str(orcid)) 
 
     save_toml(row["PDB"], replaced_template, os.getcwd(), prod_suffix)
 
@@ -137,16 +138,32 @@ def download_data_file(pdb, output_dir):
                     
                     # Move file to the respective directory
                     shutil.move(item, os.path.join(target_dir, file_name_with_ext))
-                    
-                else:
-                    print(f"Skipping item '{item}' because it's not a file.")
-            
+        
         # Delete the ZIP file after extraction
         os.unlink(data_file)
+
+        # Define the target directory where you want to move the directories
+        target_dir = os.path.join(output_dir, "data")
+
+        # Move directories to the target directory (keeping them under 'data')
+        shutil.move(os.path.join(pdb_dir, f"{pdb}_prod_R1"), target_dir)
+        shutil.move(os.path.join(pdb_dir, f"{pdb}_prod_R2"), target_dir)
+        shutil.move(os.path.join(pdb_dir, f"{pdb}_prod_R3"), target_dir)
+        
+        # Delete pdb_dir after moving prod directories
+        shutil.rmtree(pdb_dir)           
+                            
     else:
         print(f"Failed to download data file for {pdb}.")
 
 def main():
+    # Check for ORC ID
+    if len(sys.argv) > 1:
+        orcid = sys.argv[1] 
+    else:
+        print("ORCID not provided. Please provide an ORCID as a command-line argument.")
+        sys.exit(1)
+    
     # URL to download the file from
     url = 'https://www.dsimb.inserm.fr/ATLAS/api/parsable'
     
@@ -170,7 +187,7 @@ def main():
         for _, row in df.iterrows():
             # Replace placeholders in the template with values from the row
             for prod_id in [1, 2, 3]:
-                replace_placeholders(template_content, row, prod_id)
+                replace_placeholders(template_content, row, prod_id, orcid)
             
             # Save the modified TOML content in a subdirectory named after the PDB
             #save_toml(row["PDB"], replaced_template, os.getcwd())
