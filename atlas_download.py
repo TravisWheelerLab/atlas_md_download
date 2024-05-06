@@ -1,5 +1,5 @@
 import os, glob, shutil, sys
-import requests
+import requests, gc
 import pandas as pd
 from zipfile import ZipFile
 from datetime import date
@@ -98,10 +98,13 @@ def download_data_file(pdb, output_dir):
     os.makedirs(os.path.join(pdb_dir, f"{pdb}_prod_R2"), exist_ok=True)
     os.makedirs(os.path.join(pdb_dir, f"{pdb}_prod_R3"), exist_ok=True)
     
-    response = requests.get(data_url)
+    response = requests.get(data_url, stream=True)
     if response.status_code == 200:
         with open(data_file, 'wb') as f:
-            f.write(response.content)
+            for chunk in response.iter_content(chunk_size=1024): 
+                if chunk:  
+                    f.write(chunk)
+                    f.flush() 
         print(f"Downloaded data file for {pdb}.")
         
         # Extract the contents of the ZIP file
@@ -152,7 +155,7 @@ def download_data_file(pdb, output_dir):
         
         # Delete pdb_dir after moving prod directories
         shutil.rmtree(pdb_dir)           
-                            
+        gc.collect()                  
     else:
         print(f"Failed to download data file for {pdb}.")
 
