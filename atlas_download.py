@@ -1,9 +1,28 @@
 import os, glob, shutil, sys
-import requests, gc
+import requests, gc, random, time
 import pandas as pd
 from zipfile import ZipFile
 from datetime import date
 from toml import loads, dumps
+
+def check_directories(pdb):
+    """
+    Mostly in the case the script is restarted to skip over already downloaded data
+    """
+    data_dir = os.path.join(os.getcwd(), 'data')
+    subdirectories = [
+        os.path.join(data_dir, pdb),
+        os.path.join(data_dir, f"{pdb}_prod_R1"),
+        os.path.join(data_dir, f"{pdb}_prod_R2"),
+        os.path.join(data_dir, f"{pdb}_prod_R3")
+    ]
+    
+    # Check if any required subdirectory is missing
+    for subdir in subdirectories:
+        if not os.path.exists(subdir):
+            return True  # Return True if any directory is missing
+    
+    return False  # Return False if all directories exist
 
 def download_and_extract(url, output_dir):
     # Make GET request to the URL
@@ -98,66 +117,80 @@ def download_data_file(pdb, output_dir):
     os.makedirs(os.path.join(pdb_dir, f"{pdb}_prod_R2"), exist_ok=True)
     os.makedirs(os.path.join(pdb_dir, f"{pdb}_prod_R3"), exist_ok=True)
     
-    response = requests.get(data_url, stream=True)
-    if response.status_code == 200:
-        with open(data_file, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=1024): 
-                if chunk:  
-                    f.write(chunk)
-                    f.flush() 
-        print(f"Downloaded data file for {pdb}.")
-        
-        # Extract the contents of the ZIP file
-        with ZipFile(data_file, 'r') as zip_ref:
-            zip_ref.extractall(pdb_dir)
-      
-        # Move files to respective directories
-        extracted_files = glob.glob(os.path.join(pdb_dir, '*'))
-        for item in extracted_files:
-                if os.path.isfile(item):  # Check if the item is a file
-                    file_name_with_ext = os.path.basename(item)  # Get file name with extension
-                    file_name, file_ext = os.path.splitext(file_name_with_ext)  # Separate file name and extension
-                    
-                    if '_prod_R1' in file_name:
-                        target_dir = os.path.join(pdb_dir, f"{pdb}_prod_R1")
-                    elif '_prod_R2' in file_name:
-                        target_dir = os.path.join(pdb_dir, f"{pdb}_prod_R2")
-                    elif '_prod_R3' in file_name:
-                        target_dir = os.path.join(pdb_dir, f"{pdb}_prod_R3")
-                    else:
-                        if file_ext == '.top' or file_ext == '.txt' or '_start.gro' in file_name_with_ext:
-                            target_dir_r1 = os.path.join(pdb_dir, f"{pdb}_prod_R1")
-                            target_dir_r2 = os.path.join(pdb_dir, f"{pdb}_prod_R2")
-                            target_dir_r3 = os.path.join(pdb_dir, f"{pdb}_prod_R3")
+    max_attempts = 3
+    attempt = 0
+    success = False
+
+    while attempt < max_attempts and not success:
+        attempt += 1
+        try:
+            response = requests.get(data_url, stream=True)
+            if response.status_code == 200:
+                with open(data_file, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=1024): 
+                        if chunk:  
+                            f.write(chunk)
+                            f.flush() 
+                print(f"Downloaded data file for {pdb}.")
+                
+                # Extract the contents of the ZIP file
+                with ZipFile(data_file, 'r') as zip_ref:
+                    zip_ref.extractall(pdb_dir)
+            
+                # Move files to respective directories
+                extracted_files = glob.glob(os.path.join(pdb_dir, '*'))
+                for item in extracted_files:
+                        if os.path.isfile(item):  # Check if the item is a file
+                            file_name_with_ext = os.path.basename(item)  # Get file name with extension
+                            file_name, file_ext = os.path.splitext(file_name_with_ext)  # Separate file name and extension
                             
-                            # Copy file to all three respective directories
-                            shutil.copy(item, os.path.join(target_dir_r1, file_name_with_ext))
-                            shutil.copy(item, os.path.join(target_dir_r2, file_name_with_ext))
-                            shutil.copy(item, os.path.join(target_dir_r3, file_name_with_ext))
+                            if '_prod_R1' in file_name:
+                                target_dir = os.path.join(pdb_dir, f"{pdb}_prod_R1")
+                            elif '_prod_R2' in file_name:
+                                target_dir = os.path.join(pdb_dir, f"{pdb}_prod_R2")
+                            elif '_prod_R3' in file_name:
+                                target_dir = os.path.join(pdb_dir, f"{pdb}_prod_R3")
+                            else:
+                                if file_ext == '.top' or file_ext == '.txt' or '_start.gro' in file_name_with_ext:
+                                    target_dir_r1 = os.path.join(pdb_dir, f"{pdb}_prod_R1")
+                                    target_dir_r2 = os.path.join(pdb_dir, f"{pdb}_prod_R2")
+                                    target_dir_r3 = os.path.join(pdb_dir, f"{pdb}_prod_R3")
+                                    
+                                    # Copy file to all three respective directories
+                                    shutil.copy(item, os.path.join(target_dir_r1, file_name_with_ext))
+                                    shutil.copy(item, os.path.join(target_dir_r2, file_name_with_ext))
+                                    shutil.copy(item, os.path.join(target_dir_r3, file_name_with_ext))
 
-                            # Remove original file after copying to all directories
-                            os.unlink(item)
-                        continue
-                    
-                    # Move file to the respective directory
-                    shutil.move(item, os.path.join(target_dir, file_name_with_ext))
-        
-        # Delete the ZIP file after extraction
-        os.unlink(data_file)
+                                    # Remove original file after copying to all directories
+                                    os.unlink(item)
+                                continue
+                            
+                            # Move file to the respective directory
+                            shutil.move(item, os.path.join(target_dir, file_name_with_ext))
+                
+                # Delete the ZIP file after extraction
+                os.unlink(data_file)
 
-        # Define the target directory where you want to move the directories
-        target_dir = os.path.join(output_dir, "data")
+                # Define the target directory where you want to move the directories
+                target_dir = os.path.join(output_dir, "data")
 
-        # Move directories to the target directory (keeping them under 'data')
-        shutil.move(os.path.join(pdb_dir, f"{pdb}_prod_R1"), target_dir)
-        shutil.move(os.path.join(pdb_dir, f"{pdb}_prod_R2"), target_dir)
-        shutil.move(os.path.join(pdb_dir, f"{pdb}_prod_R3"), target_dir)
-        
-        # Delete pdb_dir after moving prod directories
-        shutil.rmtree(pdb_dir)           
-        gc.collect()                  
-    else:
-        print(f"Failed to download data file for {pdb}.")
+                # Move directories to the target directory (keeping them under 'data')
+                shutil.move(os.path.join(pdb_dir, f"{pdb}_prod_R1"), target_dir)
+                shutil.move(os.path.join(pdb_dir, f"{pdb}_prod_R2"), target_dir)
+                shutil.move(os.path.join(pdb_dir, f"{pdb}_prod_R3"), target_dir)
+                
+                # Delete pdb_dir after moving prod directories
+                shutil.rmtree(pdb_dir)           
+                gc.collect()                  
+            else:
+                print(f"Failed to download data file for {pdb}.")
+                time.sleep(random.uniform(1, 5))  # Random pause between attempts
+        except Exception as e:
+            print(f"Error occurred during download attempt {attempt}: {e}")
+            time.sleep(random.uniform(1, 5))  # Random pause between attempts
+    if not success:
+        print(f"Failed to download data file for {pdb} after {max_attempts} attempts.")
+
 
 def main():
     # Check for ORC ID
@@ -196,7 +229,8 @@ def main():
             #save_toml(row["PDB"], replaced_template, os.getcwd())
             
             # Download the associated data file
-            download_data_file(row["PDB"], os.getcwd())
+            if check_directories(row["PDB"]):
+                download_data_file(row["PDB"], os.getcwd())
 
     print("TOML files and data files created successfully.")
 
