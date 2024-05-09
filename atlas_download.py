@@ -1,4 +1,4 @@
-import os, glob, shutil, sys
+import os, glob, shutil, sys, argparse
 import requests, gc, random, time
 import pandas as pd
 from zipfile import ZipFile
@@ -48,7 +48,7 @@ def download_and_extract(url, output_dir):
     else:
         print(f"Failed to download file. Status code: {response.status_code}")
 
-def read_and_filter_tsv(output_dir):
+def read_and_filter_tsv(output_dir, pdb_value=None):
     # Find the TSV file ending with "_ATLAS_info.tsv" in the output directory
     tsv_files = [file for file in os.listdir(output_dir) if file.endswith('_ATLAS_info.tsv')]
     
@@ -63,6 +63,15 @@ def read_and_filter_tsv(output_dir):
     # Filter columns
     columns_to_keep = ['PDB', 'UniProt', 'organism', 'protein_name']
     df_filtered = df[columns_to_keep]
+
+    if pdb_value is not None:
+        # Find the index of the row with the specified PDB value
+        start_index = df_filtered[df_filtered['PDB'] == pdb_value].index.tolist()
+        if len(start_index) > 0:
+            start_index = start_index[0]
+            df_filtered = df_filtered.iloc[start_index:]
+        else:
+            print(f"No rows found with PDB value '{pdb_value}'.")
     
     return df_filtered
 
@@ -193,6 +202,12 @@ def download_data_file(pdb, output_dir):
 
 
 def main():
+    parser = argparse.ArgumentParser(description='Filter TSV file based on PDB value.')
+    parser.add_argument('pdb', type=str, help='Specify a PDB value to filter rows starting with this PDB')
+
+    args = parser.parse_args()
+    pdb_value = args.pdb
+
     # Check for ORC ID
     if len(sys.argv) > 1:
         orcid = sys.argv[1] 
@@ -210,7 +225,7 @@ def main():
     download_and_extract(url, output_dir)
     
     # Read and filter the TSV file
-    df = read_and_filter_tsv(output_dir)
+    df = read_and_filter_tsv(output_dir, pdb_value=pdb_value)
     if df is not None:
         # Load the template TOML content
         template_content = load_template()
