@@ -1,4 +1,4 @@
-import os, glob, shutil, sys, argparse
+import os, glob, shutil, sys
 import requests, gc, random, time
 import pandas as pd
 from zipfile import ZipFile
@@ -72,6 +72,10 @@ def read_and_filter_tsv(output_dir, pdb_value=None):
             df_filtered = df_filtered.iloc[start_index:]
         else:
             print(f"No rows found with PDB value '{pdb_value}'.")
+    else:
+        # Start from the beginning if pdb_value is None
+        start_index = 0
+        df_filtered = df_filtered.iloc[start_index:]
     
     return df_filtered
 
@@ -175,7 +179,14 @@ def download_data_file(pdb, output_dir):
                                 continue
                             
                             # Move file to the respective directory
-                            shutil.move(item, os.path.join(target_dir, file_name_with_ext))
+                            destination = os.path.join(target_dir, file_name_with_ext)
+                            shutil.move(item, destination)
+
+                            base_name, extension = os.path.splitext(file_name_with_ext)
+                            if extension == '.toml':
+                                new_file_name = 'mdrepo-metadata.toml'
+                                new_destination = os.path.join(target_dir, new_file_name)
+                                os.rename(destination, new_destination)
                 
                 # Delete the ZIP file after extraction
                 os.unlink(data_file)
@@ -202,18 +213,17 @@ def download_data_file(pdb, output_dir):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Filter TSV file based on PDB value.')
-    parser.add_argument('pdb', type=str, help='Specify a PDB value to filter rows starting with this PDB')
-
-    args = parser.parse_args()
-    pdb_value = args.pdb
-
     # Check for ORC ID
     if len(sys.argv) > 1:
         orcid = sys.argv[1] 
     else:
         print("ORCID not provided. Please provide an ORCID as a command-line argument.")
         sys.exit(1)
+
+    # Check for PDB value (optional)
+    pdb_value = None
+    if len(sys.argv) > 2:
+        pdb_value = sys.argv[2]
     
     # URL to download the file from
     url = 'https://www.dsimb.inserm.fr/ATLAS/api/parsable'

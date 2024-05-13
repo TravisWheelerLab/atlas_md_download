@@ -29,12 +29,12 @@ year = 2_023
 volume = 52
 number = "D1"
 pages = "D384–D392"
-doi = "1093"
+doi = "10.1093/nar/gkad1084"
 
 [required_files]
 trajectory_file_name = "<<df_PDB_prod>>.xtc"
 structure_file_name = "<<df_PDB_prod>>.tpr"
-topology_file_name = "<<df_PDB>>.top"
+topology_file_name = "<<df_PDB_prod>>.tpr"
 
 [[additional_files]]
 additional_file_type = "Checkpoint"
@@ -50,3 +50,8 @@ additional_file_description = "GROMACS structure file of the 1st MD frame (after
 additional_file_type = "Structure"
 additional_file_name = "<<df_PDB_prod>>_end.gro"
 additional_file_description = "GROMACS structure file of the last MD frame of each replicate for easy MD prolongation"
+
+[[additional_files]]
+additional_file_type = "Topology"
+additional_file_name = "<<df_PDB>>.top"
+additional_file_description = "GROMACS topology file"
