@@ -1,14 +1,12 @@
 replicates = { }
 ligands = [ ]
 solvents = [ ]
-forcefield = { }
-contributors = [ ]
-additional_files = [ ]
 
 [initial]
 description = "<<df_organism>>; <<df_protein_name>>"
 date = "<<today>>"
 lead_contributor_orcid = "<<df_orcid>>"
+external_link = "https://www.dsimb.inserm.fr/ATLAS/database/ATLAS/<<df_PDB>>/<<df_PDB>>.html"
 
 [water]
 is_present = false
@@ -19,7 +17,11 @@ molecule_id_type = "Uniprot"
 molecule_id = "<<df_UniProt>>"
 
 [software]
-name = "ATLAS"
+name = "GROMACS"
+version = "v2019.4"
+
+[forcefield]
+forcefield = "CHARMM36m"
 
 [[papers]]
 title = "ATLAS: protein flexibility description from atomistic molecular dynamics simulations"
@@ -30,6 +32,33 @@ volume = 52
 number = "D1"
 pages = "D384–D392"
 doi = "10.1093/nar/gkad1084"
+
+[[contributors]]
+name = "Yann Vander Meersche"
+orcid = "0000-0002-6680-8104"
+institution = "Université Paris Cité"
+
+[[contributors]]
+name = "Gabriel Cretin"
+orcid = "0000-0002-3522-7083"
+institution = "Université Paris Cité"
+
+[[contributors]]
+name = "Aria Gheeraert"
+orcid = "0000-0001-7493-8702"
+institution = "Université Paris Cité"
+
+[[contributors]]
+name = "Jean-Christophe Gelly"
+orcid = "0000-0001-5138-361X"
+email = "jean-christophe.gelly@u-paris.fr"
+institution = "Université Paris Cité"
+
+[[contributors]]
+name = "Tatiana Galochkina"
+orcid = "0000-0002-3608-5208"
+email = "tatiana.galochkina@u-paris.fr"
+institution = "Université Paris Cité"
 
 [required_files]
 trajectory_file_name = "<<df_PDB_prod>>.xtc"
